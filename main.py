@@ -2,6 +2,8 @@
 from imdb import parse_ratings
 import sqlite3
 #import os
+import re
+import unicodedata
 
 thresh_rat = 3.0
 thresh_votes = 10000
@@ -61,6 +63,10 @@ def populate_db():
         s = rs[title]
         r = s[0]
         v = s[1]
+        if title[0] == '"':  # it's a show
+            continue
+        if "(VG)" in title:  # it's a video game
+            continue
         if r >= thresh_rat and v >= thresh_votes:
             cursor.execute('INSERT INTO movies VALUES(?, ?, ?)',
                 (title.decode('utf-8'), r, v))
@@ -96,11 +102,47 @@ def populate_db():
     cursor.close()
 
 
+def likify(t, y):
+    t = re.sub('\(.*?\)$', '', t).strip()
+    slug = unicodedata.normalize('NFKD', t)
+    slug = slug.encode('ascii', 'ignore').lower()
+    slug = re.sub(r'[^a-z0-9]+', '-', slug).strip('-')
+    slug = re.sub(r'[-]+', '%', slug)
+    m_like = '%%%s%%%s%%' % (slug, y)
+    return m_like
+
+
+def do_match():
+    conn = sqlite3.connect('sqlite.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT title, rating FROM movies ORDER BY rating DESC')
+    movies = cursor.fetchall()
+    for m in movies:
+        t = m[0]
+        r = m[1]
+        try:
+            y = re.search('\((\d+).*?\)', t).groups(0)[0]
+        except:
+            y = ''
+        likified = likify(t, y)
+        #print likified
+        cursor.execute('SELECT seeds FROM torrents WHERE title LIKE "%s" ORDER BY seeds DESC' % likified)
+        torrents = cursor.fetchall()
+        try:
+            s = int(torrents[0][0])
+        except:
+            s = 0
+        if s < 15:
+            print r, s, likified, t, torrents
+
+
 def main():
     #col = MovieCollection('ratings.list')
     #print col.get_size()
     #m1 = col.movies[0]
     #print m1.title
-    populate_db()
+    #populate_db()
+    do_match()
+    pass
 
 main()
