@@ -38,7 +38,7 @@ def parse_ratings(filename):
                 rating = match.group('rating')
                 votes = match.group('votes')
                 #if title[0] != '"': # is a movie
-                ratings_index[title] = ( rating, int(votes) )
+                ratings_index[title] = ( float(rating), int(votes) )
 
     return ratings_index
 
