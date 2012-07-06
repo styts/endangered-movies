@@ -1,0 +1,4 @@
+PRAGMA foreign_keys=OFF;
+BEGIN TRANSACTION;
+CREATE TABLE torrents(magnet TEXT PRIMARY KEY, title TEXT, seeds INTEGER);
+COMMIT;

@@ -1,5 +1,11 @@
 #!env python
 from imdb import parse_ratings
+import sqlite3
+#import os
+
+
+def foo(s):
+    return s
 
 
 class Movie:
@@ -48,6 +54,11 @@ class TorrentCollection:
     titles = []  # used by fuzzywuzzy process
 
     def __init__(self):
+        #insert = True  # not os.path.exists('sqlite.db')
+        insert = False  # not os.path.exists('sqlite.db')
+        conn = sqlite3.connect('sqlite.db')
+        cursor = conn.cursor()
+
         for l in open('b3_verified.txt', 'r'):
             s = l.split('|')
             mag = s[0]
@@ -57,6 +68,11 @@ class TorrentCollection:
                 continue
             self.torrents.append(Torrent(title, mag))
             self.titles.append(title)
+            if insert:
+                cursor.execute('INSERT INTO torrents VALUES(?, ?, 0)', (mag.decode('utf-8'), title.decode('utf-8')))
+
+        conn.commit()
+        cursor.close()
 
     def get_size(self):
         return len(self.torrents)
@@ -74,7 +90,7 @@ def main():
     print tc.get_size()
 
     m1 = MovieCollection.movies[0]  # random first movie
-    tc.findMatchingTorrents(m1)
+    #tc.findMatchingTorrents(m1)
 
 
 main()
