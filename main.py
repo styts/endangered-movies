@@ -14,8 +14,10 @@ def _clear_db():
     cursor.execute('DROP TABLE movies')
     cursor.execute('DROP TABLE torrents')
     conn.commit()
-    cursor.execute('CREATE TABLE movies(title TEXT PRIMARY KEY, rating REAL, votes INTEGER)')
-    cursor.execute('CREATE TABLE torrents(magnet TEXT PRIMARY KEY, title TEXT, seeds INTEGER)')
+    cursor.execute("""CREATE TABLE movies(title TEXT PRIMARY KEY,
+            rating REAL, votes INTEGER)""")
+    cursor.execute("""CREATE TABLE torrents(magnet TEXT PRIMARY KEY,
+            title TEXT, seeds INTEGER)""")
     conn.commit()
     cursor.close()
 
@@ -51,7 +53,8 @@ def populate_db():
         cat = s[2]
         if cat != 'Video Movies':  # others are not movies
             continue
-        cursor.execute('INSERT INTO torrents VALUES(?, ?, 0)', (mag, title.decode('utf-8')))
+        cursor.execute('INSERT INTO torrents VALUES(?, ?, 0)',
+                (mag, title.decode('utf-8')))
 
     conn.commit()
 
@@ -62,7 +65,8 @@ def populate_db():
         seeds = s[1]
 
         if seeds != '0':
-            cursor.execute('UPDATE torrents SET seeds = ? WHERE magnet = ?', (seeds, mag))
+            cursor.execute('UPDATE torrents SET seeds = ? WHERE magnet = ?',
+                    (seeds, mag))
 
         if seeds == '10':  # for better overview, just a few sporadic commits
             conn.commit()
@@ -98,7 +102,8 @@ def do_match():
             y = ''
         likified = likify(t, y)
         #print likified
-        cursor.execute('SELECT seeds FROM torrents WHERE title LIKE "%s" ORDER BY seeds DESC' % likified)
+        cursor.execute("""SELECT seeds FROM torrents WHERE title LIKE "%s"
+                ORDER BY seeds DESC""" % likified)
         torrents = cursor.fetchall()
         try:
             s = int(torrents[0][0])
@@ -127,7 +132,8 @@ def foo():
     conn = sqlite3.connect('sqlite.db')
     cursor = conn.cursor()
 
-    cursor.execute('SELECT title, rating, votes FROM movies ORDER BY rating DESC')
+    cursor.execute("""SELECT title, rating, votes FROM movies
+            ORDER BY rating DESC""")
     for m in cursor.fetchall():
         print m[1], m[2], m[0]
 
