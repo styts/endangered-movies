@@ -24,13 +24,14 @@ def _clear_db():
 def populate_imdb_ids():
     conn = sqlite3.connect('sqlite.db')
     cursor = conn.cursor()
-    cursor.execute('SELECT title FROM movies WHERE imdb_id == ""')
+    cursor.execute('SELECT title FROM movies WHERE imdb_id IS NULL')
     rows = cursor.fetchall()
     for r in rows:
         t = r[0]
+        print t
         imdb_id = get_imdb_id(t)
-        cursor.execute('UPDATE movies WHERE title == ? SET imdb_id = ?',
-                t, imdb_id)
+        cursor.execute('UPDATE movies SET imdb_id = ? WHERE title = ?',
+                (imdb_id, t))
         conn.commit()
 
 
@@ -155,10 +156,7 @@ def main():
     #do_match()
     #foo()
     #print_stats()
-    #populate_imdb_ids()
-    t = 'Memento'
-    imdb_id = get_imdb_id(t)
-    print t, imdb_id
+    populate_imdb_ids()
     pass
 
 main()

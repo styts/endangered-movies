@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import re
-
+import unicodedata
 #============================== RATINGS ======================================#
 
 # General rating format:
@@ -47,11 +47,17 @@ def parse_ratings(filename):
 def get_imdb_id(title):
     import json
     import urllib2, urllib
-    url = 'http://www.imdbapi.com/?' + urllib.urlencode({'t': title})
+    url = 'http://www.imdbapi.com/?' + urllib.urlencode({'t': title.encode("utf-8")})
+    print url
     f = urllib2.urlopen(url)
     response = f.read()
     j = json.loads(response)
-    imdb = j['imdbID']
+    try:
+        imdb = j['imdbID']
+    except: # e.g. in 'A Man for All Seasons'
+        imdb = 'UNKNOWN'
+
+    print imdb
     #print j
     #print response
     #imdb = "a0205870"
