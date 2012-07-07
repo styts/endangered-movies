@@ -5,11 +5,25 @@ import re
 import unicodedata
 
 thresh_rat = 3.0
-thresh_votes = 10000
+thresh_votes = 5000
+
+
+def _clear_db():
+    conn = sqlite3.connect('sqlite.db')
+    cursor = conn.cursor()
+    cursor.execute('DROP TABLE movies')
+    cursor.execute('DROP TABLE torrents')
+    conn.commit()
+    cursor.execute('CREATE TABLE movies(title TEXT PRIMARY KEY, rating REAL, votes INTEGER)')
+    cursor.execute('CREATE TABLE torrents(magnet TEXT PRIMARY KEY, title TEXT, seeds INTEGER)')
+    conn.commit()
+    cursor.close()
 
 
 def populate_db():
     global thresh_rat, thresh_votes
+
+    _clear_db()
 
     conn = sqlite3.connect('sqlite.db')
     cursor = conn.cursor()
@@ -90,8 +104,8 @@ def do_match():
             s = int(torrents[0][0])
         except:
             s = 0
-        if s < 15:
-            print r, s, likified, t, torrents
+        if s == 0:
+            print r, likified, t, torrents
 
 
 def print_stats():
@@ -113,14 +127,14 @@ def foo():
     conn = sqlite3.connect('sqlite.db')
     cursor = conn.cursor()
 
-    cursor.execute('SELECT title FROM movies ORDER BY rating DESC')
+    cursor.execute('SELECT title, rating, votes FROM movies ORDER BY rating DESC')
     for m in cursor.fetchall():
-        print m[0]
+        print m[1], m[2], m[0]
 
 
 def main():
     #populate_db()
-    #do_match()
+    do_match()
     foo()
     print_stats()
     pass
