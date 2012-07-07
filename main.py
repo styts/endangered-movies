@@ -1,7 +1,6 @@
 #!env python
 from imdb import parse_ratings
 import sqlite3
-#import os
 import re
 import unicodedata
 
@@ -136,13 +135,39 @@ def do_match():
             print r, s, likified, t, torrents
 
 
+def print_stats():
+    conn = sqlite3.connect('sqlite.db')
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT count(*) FROM movies')
+    n_movies = cursor.fetchone()[0]
+    print 'Movies:', n_movies
+
+    cursor.execute('SELECT count(*) FROM torrents')
+    n_torrents = cursor.fetchone()[0]
+    print 'Torrents:', n_torrents
+
+    cursor.close()
+
+
+def foo():
+    conn = sqlite3.connect('sqlite.db')
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT title FROM movies')
+    for m in cursor.fetchall():
+        print m[0]
+
+
 def main():
     #col = MovieCollection('ratings.list')
     #print col.get_size()
     #m1 = col.movies[0]
     #print m1.title
     #populate_db()
-    do_match()
+    #do_match()
+    foo()
+    print_stats()
     pass
 
 main()
