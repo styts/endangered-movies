@@ -43,3 +43,16 @@ def parse_ratings(filename):
     return ratings_index
 
 
+# TODO
+def get_imdb_id(title):
+    import json
+    import urllib2, urllib
+    url = 'http://www.imdbapi.com/?' + urllib.urlencode({'t': title})
+    f = urllib2.urlopen(url)
+    response = f.read()
+    j = json.loads(response)
+    imdb = j['imdbID']
+    #print j
+    #print response
+    #imdb = "a0205870"
+    return imdb

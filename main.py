@@ -1,5 +1,5 @@
 #!env python
-from imdb import parse_ratings
+from imdb import parse_ratings, get_imdb_id
 import sqlite3
 import re
 import unicodedata
@@ -15,11 +15,23 @@ def _clear_db():
     cursor.execute('DROP TABLE torrents')
     conn.commit()
     cursor.execute("""CREATE TABLE movies(title TEXT PRIMARY KEY,
-            rating REAL, votes INTEGER)""")
+            rating REAL, votes INTEGER, imdb_id TEXT)""")
     cursor.execute("""CREATE TABLE torrents(magnet TEXT PRIMARY KEY,
             title TEXT, seeds INTEGER)""")
     conn.commit()
     cursor.close()
+
+def populate_imdb_ids():
+    conn = sqlite3.connect('sqlite.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT title FROM movies WHERE imdb_id == ""')
+    rows = cursor.fetchall()
+    for r in rows:
+        t = r[0]
+        imdb_id = get_imdb_id(t)
+        cursor.execute('UPDATE movies WHERE title == ? SET imdb_id = ?',
+                t, imdb_id)
+        conn.commit()
 
 
 def populate_db():
@@ -140,9 +152,13 @@ def foo():
 
 def main():
     #populate_db()
-    do_match()
-    foo()
-    print_stats()
+    #do_match()
+    #foo()
+    #print_stats()
+    #populate_imdb_ids()
+    t = 'Memento'
+    imdb_id = get_imdb_id(t)
+    print t, imdb_id
     pass
 
 main()
