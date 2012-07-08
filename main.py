@@ -11,6 +11,8 @@ Options:
     --imdbs         Populate imdb_ids from imdbAPI.com
     --match         Match movies to their torrents
     --populate      Populate DB from imdb files
+    --backup        Backup imdbs
+    --restore       Restore imdbs
 """
 from lib.imdb import parse_ratings, get_imdb_id
 import docopt
@@ -23,13 +25,19 @@ thresh_votes = 5000
 
 
 class DBManager:
-    def __init__(self):
+    def connect(self):
         self.conn = sqlite3.connect('sqlite.db')
         self.cursor = self.conn.cursor()
 
-    def __del__(self):
+    def disconnect(self):
         self.cursor.close()
         self.conn.commit()
+
+    def __init__(self):
+        self.connect()
+
+    def __del__(self):
+        self.disconnect()
 
     def _clear_db(self):
         self.backup_imdbids()
@@ -42,28 +50,29 @@ class DBManager:
                 title TEXT, seeds INTEGER)""")
         self.conn.commit()
 
-
     def restore_imdbs_backup(self):
+        self.disconnect()
         import os
         os.system('sqlite3 sqlite.db < data/imdb_dump.sql')
+        self.connect()
         print 'imdbids backup restored.'
-
 
     def backup_imdbids(self):
         import codecs
-        fp = codecs.open('data/imdb_dump.sql','w', 'utf-8')
-        self.cursor.execute('SELECT title, imdb_id FROM movies WHERE imdb_id IS NOT NULL')
+        fp = codecs.open('data/imdb_dump.sql', 'w', 'utf-8')
+        self.cursor.execute(
+                'SELECT title, imdb_id FROM movies WHERE imdb_id IS NOT NULL')
         rows = self.cursor.fetchall()
         for r in rows:
             t = r[0]
             i = r[1]
             t.encode('utf8')
             if i != 'UNKNOWN':
-                s = 'UPDATE movies SET imdb_id = "%s" WHERE title = "%s";\n' % (i, t)
+                s = """UPDATE movies SET imdb_id = "%s" WHERE
+                title = "%s";\n""" % (i, t)
                 fp.write(s)
         fp.close()
         print "imdb_ids backed up in data/imdb_dump.sql."
-
 
     def populate_imdb_ids(self):
         self.cursor.execute('SELECT title FROM movies WHERE imdb_id IS NULL')
@@ -72,7 +81,8 @@ class DBManager:
             t = r[0]
             print t
             imdb_id = get_imdb_id(t)
-            self.cursor.execute('UPDATE movies SET imdb_id = ? WHERE title = ?',
+            self.cursor.execute("""UPDATE movies SET imdb_id = ?
+                    WHERE title = ?""",
                     (imdb_id, t))
             self.conn.commit()
 
@@ -91,8 +101,8 @@ class DBManager:
             if "(VG)" in title:  # it's a video game
                 continue
             if r >= thresh_rat and v >= thresh_votes:
-                self.cursor.execute('INSERT INTO movies VALUES(?, ?, ?)',
-                    (title.decode('utf-8'), r, v))
+                self.cursor.execute('INSERT INTO movies VALUES(?, ?, ?, ?)',
+                    (title.decode('utf-8'), r, v, None))
 
         # restore imdbids backup
         self.restore_imdbs_backup()
@@ -119,10 +129,12 @@ class DBManager:
             seeds = s[1]
 
             if seeds != '0':
-                self.cursor.execute('UPDATE torrents SET seeds = ? WHERE magnet = ?',
+                self.cursor.execute("""UPDATE torrents SET seeds = ?
+                        WHERE magnet = ?""",
                         (seeds, mag))
 
-            if seeds == '10':  # for better overview, just a few sporadic commits
+            if seeds == '10':   # for better overview,
+                                # just a few sporadic commits
                 self.conn.commit()
 
         self.conn.commit()
@@ -141,7 +153,8 @@ class DBManager:
             m_like = '%%%s%%%s%%' % (slug, y)
             return m_like
 
-        self.cursor.execute('SELECT title, rating FROM movies ORDER BY rating DESC')
+        self.cursor.execute("""SELECT title, rating FROM movies
+                ORDER BY rating DESC""")
         movies = self.cursor.fetchall()
         for m in movies:
             t = m[0]
@@ -152,7 +165,8 @@ class DBManager:
                 y = ''
             likified = likify(t, y)
             #print likified
-            self.cursor.execute("""SELECT seeds FROM torrents WHERE title LIKE "%s"
+            self.cursor.execute("""SELECT seeds FROM torrents
+            WHERE title LIKE "%s"
                     ORDER BY seeds DESC""" % likified)
             torrents = self.cursor.fetchall()
             try:
@@ -161,7 +175,6 @@ class DBManager:
                 s = 0
             if s == 0:
                 print r, likified, t, torrents
-
 
     def print_stats(self):
         self.cursor.execute('SELECT count(*) FROM movies')
@@ -177,6 +190,7 @@ class DBManager:
                 ORDER BY rating DESC""")
         for m in self.cursor.fetchall():
             print m[1], m[2], m[0]
+
 
 def main():
     global thresh_rat, thresh_votes
@@ -194,8 +208,10 @@ def main():
     if args['--populate']:
         dbm.populate_db(thresh_rat, thresh_votes)
 
-    #dbm.backup_imdbids()
-    #dbm.restore_imdbs_backup()
+    if args['--backup']:
+        dbm.backup_imdbids()
+    if args['--restore']:
+        dbm.restore_imdbs_backup()
 
 if __name__ == '__main__':
     main()
