@@ -12,7 +12,7 @@ Options:
     --match         Match movies to their torrents
     --populate      Populate DB from imdb files
 """
-from imdb import parse_ratings, get_imdb_id
+from lib.imdb import parse_ratings, get_imdb_id
 import docopt
 import sqlite3
 import re
@@ -32,6 +32,7 @@ class DBManager:
         self.conn.commit()
 
     def _clear_db(self):
+        self.backup_imdbids()
         self.cursor.execute('DROP TABLE movies')
         self.cursor.execute('DROP TABLE torrents')
         self.conn.commit()
@@ -40,6 +41,29 @@ class DBManager:
         self.cursor.execute("""CREATE TABLE torrents(magnet TEXT PRIMARY KEY,
                 title TEXT, seeds INTEGER)""")
         self.conn.commit()
+
+
+    def restore_imdbs_backup(self):
+        import os
+        os.system('sqlite3 sqlite.db < data/imdb_dump.sql')
+        print 'imdbids backup restored.'
+
+
+    def backup_imdbids(self):
+        import codecs
+        fp = codecs.open('data/imdb_dump.sql','w', 'utf-8')
+        self.cursor.execute('SELECT title, imdb_id FROM movies WHERE imdb_id IS NOT NULL')
+        rows = self.cursor.fetchall()
+        for r in rows:
+            t = r[0]
+            i = r[1]
+            t.encode('utf8')
+            if i != 'UNKNOWN':
+                s = 'UPDATE movies SET imdb_id = "%s" WHERE title = "%s";\n' % (i, t)
+                fp.write(s)
+        fp.close()
+        print "imdb_ids backed up in data/imdb_dump.sql."
+
 
     def populate_imdb_ids(self):
         self.cursor.execute('SELECT title FROM movies WHERE imdb_id IS NULL')
@@ -69,6 +93,11 @@ class DBManager:
             if r >= thresh_rat and v >= thresh_votes:
                 self.cursor.execute('INSERT INTO movies VALUES(?, ?, ?)',
                     (title.decode('utf-8'), r, v))
+
+        # restore imdbids backup
+        self.restore_imdbs_backup()
+        # populate missing imdbs
+        self.populate_imdb_ids()
 
         ### TORRENTS
         for l in open('data/b3_verified.txt', 'r'):
@@ -164,6 +193,9 @@ def main():
         dbm.do_match()
     if args['--populate']:
         dbm.populate_db(thresh_rat, thresh_votes)
+
+    #dbm.backup_imdbids()
+    #dbm.restore_imdbs_backup()
 
 if __name__ == '__main__':
     main()
