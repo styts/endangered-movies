@@ -1,5 +1,19 @@
 #!env python
+"""Endangered Movies
+
+Usage: main.py [options]
+
+Options:
+    -l, --list      List Movies
+    -s, --stats     Display # of Movies and Torrents
+    -v, --version   Show version.
+    -h, --help      Disply this message
+    --imdbs         Populate imdb_ids from imdbAPI.com
+    --match         Match movies to their torrents
+    --populate      Populate DB from imdb files
+"""
 from imdb import parse_ratings, get_imdb_id
+import docopt
 import sqlite3
 import re
 import unicodedata
@@ -141,7 +155,7 @@ def print_stats():
     cursor.close()
 
 
-def foo():
+def print_list():
     conn = sqlite3.connect('sqlite.db')
     cursor = conn.cursor()
 
@@ -152,11 +166,17 @@ def foo():
 
 
 def main():
-    #populate_db()
-    #do_match()
-    #foo()
-    #print_stats()
-    populate_imdb_ids()
-    pass
+    args = docopt.docopt(__doc__, version='0.1.1rc')
+    if args['--list']:
+        print_list()
+    if args['--stats']:
+        print_stats()
+    if args['--imdbs']:
+        populate_imdb_ids()
+    if args['--match']:
+        do_match()
+    if args['--populate']:
+        populate_db()
 
-main()
+if __name__ == '__main__':
+    main()
