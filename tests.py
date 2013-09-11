@@ -1,6 +1,6 @@
 #!env python
 import unittest
-from imdb import get_imdb_id
+from lib.imdb import get_imdb_id
 
 
 class Foo(unittest.TestCase):
